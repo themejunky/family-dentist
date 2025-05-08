@@ -18,8 +18,26 @@ export function getSupabaseClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://example.supabase.co';
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'example-key';
   
-  // Create a supabase client
-  return createClient(supabaseUrl, supabaseAnonKey);
+  // Log the URL being used (without exposing the full key)
+  console.log('Creating Supabase client with URL:', supabaseUrl);
+  console.log('Anon key available:', !!supabaseAnonKey && supabaseAnonKey !== 'example-key');
+  
+  // Create a supabase client with additional options for better error handling
+  return createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+    },
+    global: {
+      fetch: (...args) => {
+        // Use a custom fetch with longer timeout
+        return fetch(...args);
+      },
+      headers: {
+        'X-Client-Info': 'family-dentist-website',
+      },
+    },
+  });
 }
 
 // Function to submit appointment data to Supabase

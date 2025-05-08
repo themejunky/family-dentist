@@ -65,24 +65,41 @@ const AppointmentForm = () => {
       } else {
         // Handle specific error cases
         console.error('Form submission failed with result:', result);
-        let errorMessage = 'There was an error submitting your request. Please try again or call us directly.';
         
-        // Check for specific error types
-        if (result.error && typeof result.error === 'object') {
-          const err = result.error as any;
-          if (err.code === '42P01') {
-            errorMessage = 'Database table not found. Please contact support.';
-          } else if (err.code === '42501') {
-            errorMessage = 'Permission denied. The form is currently unavailable.';
-          } else if (err.message) {
-            errorMessage = `Error: ${err.message}`;
+        // Check if it's a network error (likely CORS issue)
+        if (result.error && typeof result.error === 'object' && 
+            (result.error as any).message && 
+            ((result.error as any).message.includes('NetworkError') || 
+             (result.error as any).message.includes('Failed to fetch'))) {
+          
+          // Show alternative submission method
+          setFormStatus({
+            type: 'error',
+            message: `We're experiencing connection issues. Please call us at (123) 456-7890 or email us at info@smilecare.com with your appointment request.`
+          });
+          
+          // Don't reset the form so user can copy their information
+          
+        } else {
+          // Handle other specific error types
+          let errorMessage = 'There was an error submitting your request. Please try again or call us directly.';
+          
+          if (result.error && typeof result.error === 'object') {
+            const err = result.error as any;
+            if (err.code === '42P01') {
+              errorMessage = 'Database table not found. Please contact support.';
+            } else if (err.code === '42501') {
+              errorMessage = 'Permission denied. The form is currently unavailable.';
+            } else if (err.message) {
+              errorMessage = `Error: ${err.message}`;
+            }
           }
+          
+          setFormStatus({
+            type: 'error',
+            message: errorMessage
+          });
         }
-        
-        setFormStatus({
-          type: 'error',
-          message: errorMessage
-        });
       }
     } catch (error) {
       console.error('Exception in form submission:', error);
