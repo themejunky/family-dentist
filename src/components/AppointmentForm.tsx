@@ -49,10 +49,10 @@ const AppointmentForm = () => {
       
       if (result.success) {
         console.log('Form submission successful');
-        // Success message
+        // Success message - use custom message if provided (from localStorage fallback)
         setFormStatus({
           type: 'success',
-          message: 'Thank you! Your appointment request has been sent. We will contact you shortly.'
+          message: result.message || 'Thank you! Your appointment request has been sent. We will contact you shortly.'
         });
         
         // Reset form
