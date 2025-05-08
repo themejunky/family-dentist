@@ -85,12 +85,19 @@ const AppointmentForm = () => {
           message: errorMessage
         });
         
-        // If it's a server error, provide alternative contact method
+        // If it's a server error, provide alternative contact method with email data if available
         if (response.status >= 500) {
-          setFormStatus({
-            type: 'error',
-            message: `We're experiencing technical issues. Please call us at (123) 456-7890 or email us at info@smilecare.com with your appointment request.`
-          });
+          if (result.emailData) {
+            setFormStatus({
+              type: 'error',
+              message: `We're experiencing technical issues. Please copy the information below and email it to info@smilecare.com:\n\n${result.emailData}`
+            });
+          } else {
+            setFormStatus({
+              type: 'error',
+              message: `We're experiencing technical issues. Please call us at (123) 456-7890 or email us at info@smilecare.com with your appointment request.`
+            });
+          }
         }
       }
     } catch (error) {
@@ -177,7 +184,11 @@ const AppointmentForm = () => {
           
           {formStatus.type === 'error' && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-              {formStatus.message}
+              {formStatus.message.includes('\n') ? (
+                <pre className="whitespace-pre-wrap font-sans text-sm">{formStatus.message}</pre>
+              ) : (
+                formStatus.message
+              )}
             </div>
           )}
           
