@@ -25,9 +25,22 @@ export function getSupabaseClient() {
 // Function to submit appointment data to Supabase
 export async function submitAppointment(data: AppointmentData) {
   try {
-    const supabase = getSupabaseClient();
+    // Log the environment variables (without exposing full key)
+    console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+    console.log('Supabase Key available:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
     
-    const { error } = await supabase
+    const supabase = getSupabaseClient();
+    console.log('Supabase client created successfully');
+    
+    // Log the data being submitted (excluding sensitive info)
+    console.log('Submitting appointment data:', { 
+      name: data.name.substring(0, 2) + '...', 
+      hasPhone: !!data.phone,
+      hasEmail: !!data.email,
+      hasMessage: !!data.message 
+    });
+    
+    const { data: responseData, error } = await supabase
       .from('appointments')
       .insert([
         {
@@ -37,10 +50,16 @@ export async function submitAppointment(data: AppointmentData) {
           message: data.message,
           created_at: new Date().toISOString(),
         },
-      ]);
+      ])
+      .select();
 
-    if (error) throw error;
-    return { success: true };
+    if (error) {
+      console.error('Supabase error details:', error);
+      throw error;
+    }
+    
+    console.log('Appointment submitted successfully:', responseData);
+    return { success: true, data: responseData };
   } catch (error) {
     console.error('Error submitting appointment:', error);
     return { success: false, error };

@@ -42,25 +42,50 @@ const AppointmentForm = () => {
     });
 
     try {
+      console.log('Form submission started');
+      
       // Submit appointment data using our utility function
-      await submitAppointment(formData as AppointmentData);
+      const result = await submitAppointment(formData as AppointmentData);
       
-      // Success message
-      setFormStatus({
-        type: 'success',
-        message: 'Thank you! Your appointment request has been sent. We will contact you shortly.'
-      });
-      
-      // Reset form
-      setFormData({
-        name: '',
-        phone: '',
-        email: '',
-        message: ''
-      });
-      
+      if (result.success) {
+        console.log('Form submission successful');
+        // Success message
+        setFormStatus({
+          type: 'success',
+          message: 'Thank you! Your appointment request has been sent. We will contact you shortly.'
+        });
+        
+        // Reset form
+        setFormData({
+          name: '',
+          phone: '',
+          email: '',
+          message: ''
+        });
+      } else {
+        // Handle specific error cases
+        console.error('Form submission failed with result:', result);
+        let errorMessage = 'There was an error submitting your request. Please try again or call us directly.';
+        
+        // Check for specific error types
+        if (result.error && typeof result.error === 'object') {
+          const err = result.error as any;
+          if (err.code === '42P01') {
+            errorMessage = 'Database table not found. Please contact support.';
+          } else if (err.code === '42501') {
+            errorMessage = 'Permission denied. The form is currently unavailable.';
+          } else if (err.message) {
+            errorMessage = `Error: ${err.message}`;
+          }
+        }
+        
+        setFormStatus({
+          type: 'error',
+          message: errorMessage
+        });
+      }
     } catch (error) {
-      console.error('Error submitting form:', error);
+      console.error('Exception in form submission:', error);
       setFormStatus({
         type: 'error',
         message: 'There was an error submitting your request. Please try again or call us directly.'
