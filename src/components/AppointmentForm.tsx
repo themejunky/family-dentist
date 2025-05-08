@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, ChangeEvent, FormEvent } from 'react';
-import { submitAppointment, AppointmentData } from '@/utils/supabase';
+import type { AppointmentData } from '@/utils/supabase';
 
 const AppointmentForm = () => {
   const [formData, setFormData] = useState({
@@ -44,12 +44,20 @@ const AppointmentForm = () => {
     try {
       console.log('Form submission started');
       
-      // Submit appointment data using our utility function
-      const result = await submitAppointment(formData as AppointmentData);
+      // Submit appointment data using the API route
+      const response = await fetch('/api/appointments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
       
-      if (result.success) {
+      const result = await response.json();
+      
+      if (response.ok && result.success) {
         console.log('Form submission successful');
-        // Success message - use custom message if provided (from localStorage fallback)
+        // Success message
         setFormStatus({
           type: 'success',
           message: result.message || 'Thank you! Your appointment request has been sent. We will contact you shortly.'
@@ -63,41 +71,25 @@ const AppointmentForm = () => {
           message: ''
         });
       } else {
-        // Handle specific error cases
-        console.error('Form submission failed with result:', result);
+        // Handle API errors
+        console.error('Form submission failed:', result);
         
-        // Check if it's a network error (likely CORS issue)
-        if (result.error && typeof result.error === 'object' && 
-            (result.error as any).message && 
-            ((result.error as any).message.includes('NetworkError') || 
-             (result.error as any).message.includes('Failed to fetch'))) {
-          
-          // Show alternative submission method
+        let errorMessage = 'There was an error submitting your request. Please try again or call us directly.';
+        
+        if (result.error) {
+          errorMessage = `Error: ${result.error}`;
+        }
+        
+        setFormStatus({
+          type: 'error',
+          message: errorMessage
+        });
+        
+        // If it's a server error, provide alternative contact method
+        if (response.status >= 500) {
           setFormStatus({
             type: 'error',
-            message: `We're experiencing connection issues. Please call us at (123) 456-7890 or email us at info@smilecare.com with your appointment request.`
-          });
-          
-          // Don't reset the form so user can copy their information
-          
-        } else {
-          // Handle other specific error types
-          let errorMessage = 'There was an error submitting your request. Please try again or call us directly.';
-          
-          if (result.error && typeof result.error === 'object') {
-            const err = result.error as any;
-            if (err.code === '42P01') {
-              errorMessage = 'Database table not found. Please contact support.';
-            } else if (err.code === '42501') {
-              errorMessage = 'Permission denied. The form is currently unavailable.';
-            } else if (err.message) {
-              errorMessage = `Error: ${err.message}`;
-            }
-          }
-          
-          setFormStatus({
-            type: 'error',
-            message: errorMessage
+            message: `We're experiencing technical issues. Please call us at (123) 456-7890 or email us at info@smilecare.com with your appointment request.`
           });
         }
       }
@@ -105,7 +97,7 @@ const AppointmentForm = () => {
       console.error('Exception in form submission:', error);
       setFormStatus({
         type: 'error',
-        message: 'There was an error submitting your request. Please try again or call us directly.'
+        message: 'There was a network error submitting your request. Please try again or call us directly.'
       });
     }
   };
